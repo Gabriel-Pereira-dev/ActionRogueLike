@@ -7,8 +7,10 @@
 #include "InputActionValue.h"
 #include "SCharacter.generated.h"
 
+class USInteractionComponent;
 class UCameraComponent;
 class USpringArmComponent;
+class UAnimMontage;
 
 UCLASS()
 class ACTIONROGUELIKE_API ASCharacter : public ACharacter
@@ -23,13 +25,34 @@ class ACTIONROGUELIKE_API ASCharacter : public ACharacter
 	UPROPERTY(EditAnywhere,BlueprintReadOnly,Category= Input, meta = (AllowPrivateAccess = "true"))
 	class UInputAction* MoveAction;
 
-	/** Turn Input Action */
+	/** Mouse Input Action */
 	UPROPERTY(EditAnywhere,BlueprintReadOnly,Category= Input, meta = (AllowPrivateAccess = "true"))
-	UInputAction* TurnAction;
+	UInputAction* MouseAction;
 
+	/** Primary Attack Input Action */
+	UPROPERTY(EditAnywhere,BlueprintReadOnly,Category= Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* PrimaryAttackAction;
+	
+	/** Primary Attack Input Action */
+	UPROPERTY(EditAnywhere,BlueprintReadOnly,Category= Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* JumpAction;
+
+	/** Interact Input Action */
+	UPROPERTY(EditAnywhere,BlueprintReadOnly,Category= Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* InteractAction;
+	
 public:
 	// Sets default values for this character's properties
 	ASCharacter();
+
+protected:
+	UPROPERTY(EditAnywhere, Category= Attack)
+	TSubclassOf<AActor> ProjectileClass;
+
+	UPROPERTY(EditAnywhere, Category= Attack)
+	UAnimMontage* PrimaryAttackAnim;
+
+	FTimerHandle TimerHandle_PrimaryAttack; 
 
 protected:
 	UPROPERTY(VisibleAnywhere)
@@ -37,16 +60,27 @@ protected:
 
 	UPROPERTY(VisibleAnywhere)
 	UCameraComponent* CameraComp;
+
+	UPROPERTY(VisibleAnywhere)
+	USInteractionComponent* InteractionComp;
 	
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-
-protected:
+	
 	// Movement Input
 	void Move(const FInputActionValue& Value);
 
-	// Turn Input
-	void Turn(const FInputActionValue& Value);
+	// Mouse Input
+	void Mouse(const FInputActionValue& Value);
+
+	// Primary Attack Input
+	void PrimaryAttack(const FInputActionValue& Value);
+
+	// Primary Attack After Time Elapsed
+	void PrimaryAttack_TimeElapsed();
+
+	// Primary Interact  Input
+	void PrimaryInteract(const FInputActionValue& Value);
 
 public:	
 	// Called every frame
