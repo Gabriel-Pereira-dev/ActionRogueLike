@@ -25,7 +25,7 @@ protected:
 	UPROPERTY(VisibleAnywhere)
 	URadialForceComponent* RadialForceComp;
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION()
 	void OnHitStaticMeshComp(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit);
 	
 	// Called when the game starts or when spawned

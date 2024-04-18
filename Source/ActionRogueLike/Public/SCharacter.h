@@ -7,6 +7,7 @@
 #include "InputActionValue.h"
 #include "SCharacter.generated.h"
 
+class USAttributeComponent;
 class USInteractionComponent;
 class UCameraComponent;
 class USpringArmComponent;
@@ -40,19 +41,32 @@ class ACTIONROGUELIKE_API ASCharacter : public ACharacter
 	/** Interact Input Action */
 	UPROPERTY(EditAnywhere,BlueprintReadOnly,Category= Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* InteractAction;
-	
+
+	/** Blackhole Attack Input Action */
+	UPROPERTY(EditAnywhere,BlueprintReadOnly,Category= Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* BlackHoleAction;
+
+	/** Teleport Attack Input Action */
+	UPROPERTY(EditAnywhere,BlueprintReadOnly,Category= Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* TeleportAction;
 public:
 	// Sets default values for this character's properties
 	ASCharacter();
 
 protected:
 	UPROPERTY(EditAnywhere, Category= Attack)
-	TSubclassOf<AActor> ProjectileClass;
+	TSubclassOf<AActor> MagicProjectileClass;
+
+	UPROPERTY(EditAnywhere, Category= Attack)
+	TSubclassOf<AActor> BlackHoleProjectileClass;
+
+	UPROPERTY(EditAnywhere, Category= Attack)
+	TSubclassOf<AActor> TeleportProjectileClass;
 
 	UPROPERTY(EditAnywhere, Category= Attack)
 	UAnimMontage* PrimaryAttackAnim;
 
-	FTimerHandle TimerHandle_PrimaryAttack; 
+	FTimerHandle TimerHandle_PrimaryAttack;
 
 protected:
 	UPROPERTY(VisibleAnywhere)
@@ -63,6 +77,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere)
 	USInteractionComponent* InteractionComp;
+
+	UPROPERTY(VisibleAnywhere,BlueprintReadOnly, Category= "Components")
+	USAttributeComponent* AttributeComp;
 	
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -81,6 +98,20 @@ protected:
 
 	// Primary Interact  Input
 	void PrimaryInteract(const FInputActionValue& Value);
+
+	// BlackHole Attack Input
+	void BlackHoleAttack(const FInputActionValue& Value);
+
+	// BlackHole Attack After Time Elapsed
+	void BlackHoleAttack_TimeElapsed();
+
+	// Teleport Attack Input
+	void TeleportAttack(const FInputActionValue& Value);
+
+	// Teleport Attack After Time Elapsed
+	void TeleportAttack_TimeElapsed();
+
+	void SpawnProjectile(TSubclassOf<AActor> ProjectileClass);
 
 public:	
 	// Called every frame

@@ -7,9 +7,11 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "SAttributeComponent.h"
 #include "SInteractionComponent.h"
 #include "Animation/AnimMontage.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/KismetMathLibrary.h"
 
 // Sets default values
 ASCharacter::ASCharacter()
@@ -25,6 +27,8 @@ ASCharacter::ASCharacter()
 	CameraComp->SetupAttachment(SpringArmComp);
 
 	InteractionComp = CreateDefaultSubobject<USInteractionComponent>("InteractionComp");
+
+	AttributeComp = CreateDefaultSubobject<USAttributeComponent>("AttributeComp");
 
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 
@@ -80,9 +84,11 @@ void ASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ASCharacter::Move);
 		EnhancedInputComponent->BindAction(MouseAction,ETriggerEvent::Triggered, this, &ASCharacter::Mouse);
-		EnhancedInputComponent->BindAction(PrimaryAttackAction,ETriggerEvent::Started, this, &ASCharacter::PrimaryAttack);
+		EnhancedInputComponent->BindAction(PrimaryAttackAction,ETriggerEvent::Triggered, this, &ASCharacter::PrimaryAttack);
 		EnhancedInputComponent->BindAction(JumpAction,ETriggerEvent::Started, this, &ASCharacter::Jump);
 		EnhancedInputComponent->BindAction(InteractAction,ETriggerEvent::Started, this, &ASCharacter::PrimaryInteract);
+		EnhancedInputComponent->BindAction(BlackHoleAction,ETriggerEvent::Triggered, this, &ASCharacter::BlackHoleAttack);
+		EnhancedInputComponent->BindAction(TeleportAction,ETriggerEvent::Triggered, this, &ASCharacter::TeleportAttack);
 	}
 
 }
@@ -116,23 +122,107 @@ void ASCharacter::Mouse(const FInputActionValue& Value)
 
 void ASCharacter::PrimaryAttack(const FInputActionValue& Value)
 {
-	PlayAnimMontage(PrimaryAttackAnim);
+	
+	bool bIsTimerActive = GetWorldTimerManager().IsTimerActive(TimerHandle_PrimaryAttack);
+	//float AnimPlayLength = PrimaryAttackAnim->GetPlayLength();
+	//bool IsPlayingAnimMontage = GetMesh()->GetAnimInstance()->Montage_IsPlaying(PrimaryAttackAnim);
 
-	GetWorldTimerManager().SetTimer(TimerHandle_PrimaryAttack, this, &ASCharacter::PrimaryAttack_TimeElapsed, 0.2f);
+	if(!bIsTimerActive)
+	{
+		// Play Anim
+		PlayAnimMontage(PrimaryAttackAnim);
+
+		GetWorldTimerManager().SetTimer(TimerHandle_PrimaryAttack, this, &ASCharacter::PrimaryAttack_TimeElapsed, 0.2);
+	}
+
 }
 
 void ASCharacter::PrimaryAttack_TimeElapsed()
 {
-	FVector HandLocation = GetMesh()->GetSocketLocation("Muzzle_01");
-	FTransform SpawnTM = FTransform(GetControlRotation(),HandLocation);
-
-	FActorSpawnParameters SpawnParameters;
-	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	
-	GetWorld()->SpawnActor<AActor>(ProjectileClass,SpawnTM,SpawnParameters);
+	if(ensure((MagicProjectileClass)))
+	{
+		SpawnProjectile(MagicProjectileClass);
+		
+	}
 }
 
 void ASCharacter::PrimaryInteract(const FInputActionValue& Value)
 {
 	InteractionComp->PrimaryInteract();
+}
+
+void ASCharacter::BlackHoleAttack(const FInputActionValue& Value)
+{
+	bool bIsTimerActive = GetWorldTimerManager().IsTimerActive(TimerHandle_PrimaryAttack);
+	//float AnimPlayLength = PrimaryAttackAnim->GetPlayLength();
+	//bool IsPlayingAnimMontage = GetMesh()->GetAnimInstance()->Montage_IsPlaying(PrimaryAttackAnim);
+
+	if(!bIsTimerActive)
+	{
+		// Play Anim
+		PlayAnimMontage(PrimaryAttackAnim);
+
+		GetWorldTimerManager().SetTimer(TimerHandle_PrimaryAttack, this, &ASCharacter::BlackHoleAttack_TimeElapsed, 0.2);
+	}
+}
+
+void ASCharacter::BlackHoleAttack_TimeElapsed()
+{
+	if(ensure((BlackHoleProjectileClass)))
+	{
+		SpawnProjectile(BlackHoleProjectileClass);
+		
+	}
+}
+
+void ASCharacter::TeleportAttack(const FInputActionValue& Value)
+{
+	bool bIsTimerActive = GetWorldTimerManager().IsTimerActive(TimerHandle_PrimaryAttack);
+	//float AnimPlayLength = PrimaryAttackAnim->GetPlayLength();
+	//bool IsPlayingAnimMontage = GetMesh()->GetAnimInstance()->Montage_IsPlaying(PrimaryAttackAnim);
+
+	if(!bIsTimerActive)
+	{
+		// Play Anim
+		PlayAnimMontage(PrimaryAttackAnim);
+
+		GetWorldTimerManager().SetTimer(TimerHandle_PrimaryAttack, this, &ASCharacter::TeleportAttack_TimeElapsed, 0.2);
+	}
+	
+}
+
+void ASCharacter::TeleportAttack_TimeElapsed()
+{
+	if(ensure((TeleportProjectileClass)))
+	{
+		SpawnProjectile(TeleportProjectileClass);
+		
+	}
+
+}
+
+void ASCharacter::SpawnProjectile(TSubclassOf<AActor> ProjectileClass)
+{
+	FCollisionObjectQueryParams ObjectQueryParams;
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldStatic);
+	
+	FHitResult Hit;
+	FVector Start = CameraComp->GetComponentLocation();
+	FVector End = Start + ( CameraComp->GetForwardVector() * 8000);
+	
+	bool bBlockingHit = GetWorld()->LineTraceSingleByObjectType(Hit,Start,End,ObjectQueryParams);
+	//DrawDebugLine(GetWorld(),Start,End,FColor::Magenta,false,2.0,0,2.0);
+	
+	FVector HandLocation = GetMesh()->GetSocketLocation("Muzzle_01");
+	FVector ProjectileTarget = bBlockingHit ? Hit.ImpactPoint : End;
+	FRotator ProjectileRotation = UKismetMathLibrary::FindLookAtRotation(HandLocation,ProjectileTarget);
+	
+	FTransform SpawnTM = FTransform(ProjectileRotation,HandLocation);
+
+	FActorSpawnParameters SpawnParameters;
+	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	SpawnParameters.Instigator = this;
+	
+	GetWorld()->SpawnActor<AActor>(ProjectileClass,SpawnTM,SpawnParameters);
 }

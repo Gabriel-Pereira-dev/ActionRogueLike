@@ -3,40 +3,35 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "SGameplayInterface.h"
 #include "GameFramework/Actor.h"
-#include "SItemChest.generated.h"
+#include "STargetDummy.generated.h"
 
 class UStaticMeshComponent;
+class USAttributeComponent;
 
 UCLASS()
-class ACTIONROGUELIKE_API ASItemChest : public AActor, public ISGameplayInterface
+class ACTIONROGUELIKE_API ASTargetDummy : public AActor
 {
 	GENERATED_BODY()
-
 	
 public:	
 	// Sets default values for this actor's properties
-	ASItemChest();
-
-	UPROPERTY(EditAnywhere)
-	float TargetPitch;
-	
-	void Interact_Implementation(APawn* InstigatorPawn);
+	ASTargetDummy();
 
 protected:
-
 	UPROPERTY(VisibleAnywhere)
-	UStaticMeshComponent* BaseMesh;
+	UStaticMeshComponent* MeshComp;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	UStaticMeshComponent* LidMesh;
-	
+	UPROPERTY()
+	USAttributeComponent* AttributeComp;
+
+	UFUNCTION()
+	void OnHealthChanged(AActor* InstigatorActor, USAttributeComponent* OwningComp, float NewHealth, float Delta);
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-public:	
+public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
-	
+
 };

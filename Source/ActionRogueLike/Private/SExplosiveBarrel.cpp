@@ -19,14 +19,15 @@ ASExplosiveBarrel::ASExplosiveBarrel()
 	RadialForceComp = CreateDefaultSubobject<URadialForceComponent>("RadialForceComp");
 	RadialForceComp->SetupAttachment(StaticMeshComp);
 	RadialForceComp->ImpulseStrength = 2000.0f;
-	RadialForceComp->bImpulseVelChange = true;
 	RadialForceComp->Radius = 700.0f;
+	RadialForceComp->bImpulseVelChange = true;
+	RadialForceComp->bAutoActivate = false;
 }
 
 void ASExplosiveBarrel::OnHitStaticMeshComp(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
 {
-	UE_LOG(LogTemp,Warning,TEXT("OnHitStaticMeshComp"));
+	//UE_LOG(LogTemp,Warning,TEXT("OnHitStaticMeshComp"));
 	RadialForceComp->FireImpulse();
 }
 
