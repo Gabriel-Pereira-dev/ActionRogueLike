@@ -201,28 +201,70 @@ void ASCharacter::TeleportAttack_TimeElapsed()
 
 }
 
-void ASCharacter::SpawnProjectile(TSubclassOf<AActor> ProjectileClass)
+void ASCharacter::SpawnProjectile(TSubclassOf<AActor> ClassToSpawn)
 {
-	FCollisionObjectQueryParams ObjectQueryParams;
-	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
-	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldStatic);
-	
-	FHitResult Hit;
-	FVector Start = CameraComp->GetComponentLocation();
-	FVector End = Start + ( CameraComp->GetForwardVector() * 8000);
-	
-	bool bBlockingHit = GetWorld()->LineTraceSingleByObjectType(Hit,Start,End,ObjectQueryParams);
-	//DrawDebugLine(GetWorld(),Start,End,FColor::Magenta,false,2.0,0,2.0);
-	
-	FVector HandLocation = GetMesh()->GetSocketLocation("Muzzle_01");
-	FVector ProjectileTarget = bBlockingHit ? Hit.ImpactPoint : End;
-	FRotator ProjectileRotation = UKismetMathLibrary::FindLookAtRotation(HandLocation,ProjectileTarget);
-	
-	FTransform SpawnTM = FTransform(ProjectileRotation,HandLocation);
+	if(ensureAlways(ClassToSpawn))
+	{
+		FVector HandLocation = GetMesh()->GetSocketLocation("Muzzle_01");
 
-	FActorSpawnParameters SpawnParameters;
-	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	SpawnParameters.Instigator = this;
+		FActorSpawnParameters SpawnParameters;
+		SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		SpawnParameters.Instigator = this;
+		
+		FCollisionObjectQueryParams ObjectQueryParams;
+		ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
+		ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldStatic);
+		ObjectQueryParams.AddObjectTypesToQuery(ECC_Pawn);
+
+		FCollisionShape Shape;
+		Shape.SetSphere(20.0f);
+
+		FCollisionQueryParams Params;
+		Params.AddIgnoredActor(this);
+		
+		FHitResult Hit;
+		FVector TraceStart = CameraComp->GetComponentLocation();
+		FVector TraceEnd = TraceStart + ( GetControlRotation().Vector() * 5000);
+		
+		bool bBlockingHit = GetWorld()->SweepSingleByObjectType(Hit,TraceStart,TraceEnd,FQuat::Identity,ObjectQueryParams,Shape,Params);
+		//DrawDebugLine(GetWorld(),Start,End,FColor::Magenta,false,2.0,0,2.0);
+
+		if(bBlockingHit)
+		{
+			TraceEnd = Hit.ImpactPoint;
+		}
+		
+		FRotator ProjectileRotation = FRotationMatrix::MakeFromX(TraceEnd - HandLocation).Rotator();
+		
+		FTransform SpawnTM = FTransform(ProjectileRotation,HandLocation);
+		
+		GetWorld()->SpawnActor<AActor>(ClassToSpawn,SpawnTM,SpawnParameters);
+	}
+}
+
+void ASCharacter::OnHealthChanged(AActor* InstigatorActor, USAttributeComponent* OwningComp, float NewHealth,
+	float Delta)
+{
+	if(Delta < 0.0f)
+	{
+		if(NewHealth <= 0.0f)
+		{
+			APlayerController* PC = Cast<APlayerController>(GetController());
+			DisableInput(PC);
+		}else
+		{
+			GetMesh()->SetScalarParameterValueOnMaterials("TimeToHit", GetWorld()->TimeSeconds);
+		}
+		
+		
+	}
 	
-	GetWorld()->SpawnActor<AActor>(ProjectileClass,SpawnTM,SpawnParameters);
+	
+}
+
+void ASCharacter::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	AttributeComp->OnHealthChanged.AddDynamic(this, &ASCharacter::OnHealthChanged);
 }

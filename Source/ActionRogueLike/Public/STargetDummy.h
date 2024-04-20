@@ -21,8 +21,8 @@ public:
 protected:
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* MeshComp;
-
-	UPROPERTY()
+	
+	UPROPERTY(VisibleAnywhere,BlueprintReadOnly, Category= "Components")
 	USAttributeComponent* AttributeComp;
 
 	UFUNCTION()

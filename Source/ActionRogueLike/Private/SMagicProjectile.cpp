@@ -5,9 +5,10 @@
 
 #include "SAttributeComponent.h"
 #include "Components/SphereComponent.h"
+#include "GameFramework/ProjectileMovementComponent.h"
 
 void ASMagicProjectile::OnActorOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+                                       UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	if (OtherActor)
 	{
@@ -25,5 +26,7 @@ ASMagicProjectile::ASMagicProjectile()
 {
  	SphereComp->SetSphereRadius(20.0f);
 	SphereComp->OnComponentBeginOverlap.AddDynamic(this, &ASMagicProjectile::OnActorOverlap);
+
+	MovementComp->InitialSpeed = 1000.0f;
 }
 
